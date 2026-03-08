@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Florida Political Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#07080a;--s:#0f1114;--s2:#181b1f;--br:#232830;
+  --r:#ff4757;--b:#3d8ef8;--g:#2ecc71;--y:#f0a500;--pu:#a78bfa;
+  --tx:#eef0f4;--dm:#7a8494;--mt:#3a4050;
+  --fd:'Syne',sans-serif;--fm:'DM Mono',monospace;--fb:'DM Sans',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--tx);font-family:var(--fb);overflow-x:hidden;line-height:1.5}
+::selection{background:var(--b);color:#fff}
+a{color:inherit;text-decoration:none}
+::-webkit-scrollbar{width:4px;background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--br)}
+
+/* NAV */
+nav{background:rgba(7,8,10,.96);border-bottom:1px solid var(--br);position:sticky;top:0;z-index:200;height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 2rem;backdrop-filter:blur(16px)}
+.logo{font-family:var(--fd);font-size:1.3rem;font-weight:800;letter-spacing:1px;color:var(--tx)}
+.logo span{color:var(--r)}
+.navtabs{display:flex;gap:0;height:54px}
+.ntab{font-family:var(--fm);font-size:.62rem;letter-spacing:2px;text-transform:uppercase;padding:0 1.2rem;cursor:pointer;border:none;border-bottom:2px solid transparent;color:var(--dm);background:none;height:100%;transition:all .18s}
+.ntab:hover{color:var(--tx)}
+.ntab.active{color:var(--tx);border-bottom-color:var(--r)}
+.nright{font-family:var(--fm);font-size:.58rem;color:var(--dm);display:flex;align-items:center;gap:.5rem}
+.dot{width:5px;height:5px;border-radius:50%;background:var(--g);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+
+/* TICKER */
+.tick-wrap{background:linear-gradient(90deg,var(--r),#c0392b);overflow:hidden;height:28px;display:flex;align-items:center}
+.tick{display:flex;gap:3rem;animation:ticker 60s linear infinite;white-space:nowrap;font-family:var(--fm);font-size:.62rem;letter-spacing:1px;font-weight:500;color:rgba(255,255,255,.9)}
+@keyframes ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* PAGES */
+.page{display:none;max-width:1480px;margin:0 auto;padding:1.75rem 2rem}
+.page.active{display:block}
+
+/* STATS */
+.statrow{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:.8rem;margin-bottom:1.75rem}
+.stat{background:var(--s);border:1px solid var(--br);padding:.9rem 1.1rem;border-radius:2px}
+.stat-n{font-family:var(--fd);font-size:2rem;font-weight:800;line-height:1}
+.stat-l{font-family:var(--fm);font-size:.55rem;color:var(--dm);text-transform:uppercase;letter-spacing:1px;margin-top:.3rem}
+
+/* SECTION TITLE */
+.stitle{font-family:var(--fd);font-size:1.9rem;font-weight:800;letter-spacing:.5px;margin-bottom:1rem;display:flex;align-items:baseline;gap:1rem}
+.stitle small{font-family:var(--fm);font-size:.58rem;color:var(--mt);letter-spacing:2px;font-weight:400}
+
+/* LEGEND */
+.legend{font-family:var(--fm);font-size:.6rem;color:var(--mt);margin-bottom:1.2rem;padding:.75rem 1.1rem;border:1px solid var(--br);border-left:3px solid var(--br);line-height:1.9;border-radius:0 2px 2px 0}
+.legend strong{color:var(--dm)}
+.legend a{color:var(--b)}
+
+/* CONTROLS */
+.controls{display:flex;gap:.4rem;margin-bottom:1rem;flex-wrap:wrap;align-items:center}
+.flabel{font-family:var(--fm);font-size:.58rem;color:var(--dm);letter-spacing:1px;text-transform:uppercase;margin-right:.1rem}
+.fb{font-family:var(--fm);font-size:.6rem;background:transparent;border:1px solid var(--br);color:var(--dm);padding:.28rem .72rem;cursor:pointer;transition:all .18s;letter-spacing:1px;text-transform:uppercase;border-radius:2px}
+.fb:hover{border-color:var(--dm);color:var(--tx)}
+.fb.active{border-color:var(--tx);color:var(--tx);background:var(--s2)}
+.fb.rep.active{border-color:var(--r);color:var(--r);background:rgba(255,71,87,.06)}
+.fb.dem.active{border-color:var(--b);color:var(--b);background:rgba(61,142,248,.06)}
+.search{font-family:var(--fm);font-size:.68rem;background:var(--s);border:1px solid var(--br);color:var(--tx);padding:.45rem .9rem;width:100%;max-width:300px;outline:none;margin-bottom:1rem;border-radius:2px}
+.search:focus{border-color:var(--dm)}
+.search::placeholder{color:var(--mt)}
+
+/* CARD GRID */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:1rem;margin-bottom:2.5rem}
+
+/* CARD */
+.card{background:var(--s);border:1px solid var(--br);padding:1.25rem;cursor:pointer;animation:fi .3s ease forwards;opacity:0;transition:transform .18s,border-color .18s,background .18s;display:flex;flex-direction:column;gap:.85rem;border-radius:3px}
+.card:hover{transform:translateY(-3px);background:var(--s2);border-color:var(--dm)}
+.card.rep{border-top:2px solid var(--r)}
+.card.dem{border-top:2px solid var(--b)}
+@keyframes fi{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+.ch{display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem}
+.cname{font-family:var(--fd);font-size:1.15rem;font-weight:800;letter-spacing:.3px;line-height:1.15}
+.cmeta{font-family:var(--fm);font-size:.56rem;color:var(--dm);margin-top:.22rem}
+.ptag{font-family:var(--fm);font-size:.52rem;font-weight:500;padding:.14rem .48rem;letter-spacing:1.5px;flex-shrink:0;border-radius:2px}
+.ptag.rep{background:rgba(255,71,87,.12);color:var(--r);border:1px solid rgba(255,71,87,.3)}
+.ptag.dem{background:rgba(61,142,248,.12);color:var(--b);border:1px solid rgba(61,142,248,.3)}
+.ctag{font-family:var(--fm);font-size:.5rem;background:rgba(46,204,113,.08);color:var(--g);border:1px solid rgba(46,204,113,.25);padding:.1rem .42rem;letter-spacing:1px;display:inline-block;margin-top:.22rem;border-radius:2px}
+.compbadge{font-family:var(--fm);font-size:.5rem;background:rgba(240,165,0,.08);color:var(--y);border:1px solid rgba(240,165,0,.25);padding:.1rem .42rem;letter-spacing:1px;margin-left:auto;border-radius:2px}
+
+/* SCORE SECTION LABEL */
+.score-section-label{font-family:var(--fm);font-size:.54rem;color:var(--mt);text-transform:uppercase;letter-spacing:2px;padding-bottom:.4rem;border-bottom:1px solid var(--br)}
+
+/* SCORES */
+.scores{display:flex;flex-direction:column;gap:.35rem}
+.srow{display:flex;align-items:center;gap:.55rem}
+.slabel{font-family:var(--fm);font-size:.54rem;color:var(--dm);text-transform:uppercase;letter-spacing:.4px;width:108px;flex-shrink:0}
+.sbar-w{flex:1;height:3px;background:var(--br);border-radius:2px;overflow:hidden}
+.sbar{height:100%;transition:width 1s cubic-bezier(.23,1,.32,1);border-radius:2px}
+.snum{font-family:var(--fm);font-size:.56rem;color:var(--dm);width:24px;text-align:right;flex-shrink:0}
+
+/* DIVIDER */
+.score-divider{height:1px;background:var(--br);margin:.1rem 0}
+
+/* OVERALL ROW */
+.overall{display:flex;align-items:center;gap:.6rem;padding-top:.7rem;border-top:1px solid var(--br)}
+.olabel{font-family:var(--fm);font-size:.54rem;color:var(--dm);text-transform:uppercase;letter-spacing:1px}
+.onum{font-family:var(--fd);font-size:1.4rem;font-weight:800;line-height:1}
+.gsrc{font-family:var(--fm);font-size:.48rem;color:var(--mt);margin-left:auto}
+.gsrc a{color:var(--mt);text-decoration:underline}
+
+/* CARD NEWS */
+.card-news{border-top:1px solid var(--br);padding-top:.65rem}
+.card-news-label{font-family:var(--fm);font-size:.5rem;color:var(--g);text-transform:uppercase;letter-spacing:2px;margin-bottom:.28rem}
+.card-news-title{font-size:.74rem;line-height:1.4;color:var(--dm)}
+.card-news-title a{color:var(--b)}
+.card-news-title a:hover{text-decoration:underline}
+.card-news-date{font-family:var(--fm);font-size:.48rem;color:var(--mt);margin-top:.18rem}
+
+/* MODAL */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:300;align-items:center;justify-content:center;padding:1.5rem}
+.overlay.open{display:flex}
+.modal{background:var(--s);border:1px solid var(--br);padding:2rem;max-width:600px;width:100%;max-height:88vh;overflow-y:auto;position:relative;animation:fi .18s ease;border-radius:4px}
+.mclose{position:absolute;top:1rem;right:1rem;font-family:var(--fm);font-size:.6rem;background:transparent;border:1px solid var(--br);color:var(--dm);padding:.22rem .5rem;cursor:pointer;letter-spacing:1px;border-radius:2px;transition:all .15s}
+.mclose:hover{border-color:var(--dm);color:var(--tx)}
+.mname{font-family:var(--fd);font-size:1.75rem;font-weight:800;letter-spacing:.5px;margin-bottom:.2rem}
+.mbio{font-size:.8rem;line-height:1.65;color:var(--dm);margin:1rem 0}
+.mih{font-family:var(--fm);font-size:.58rem;color:var(--mt);text-transform:uppercase;letter-spacing:2px;margin:.9rem 0 .5rem}
+.mi{margin:.45rem 0;padding:.7rem;background:var(--s2);border:1px solid var(--br);border-radius:2px}
+.mit{font-family:var(--fm);font-size:.6rem;color:var(--tx);text-transform:uppercase;letter-spacing:1px;margin-bottom:.25rem;display:flex;justify-content:space-between;align-items:center}
+.mitxt{font-size:.76rem;color:var(--dm);line-height:1.55}
+.mit-score{font-family:var(--fd);font-size:1rem;font-weight:800}
+.mnews{margin-top:1rem;padding:.8rem;background:var(--s2);border-left:3px solid var(--g);border-radius:0 2px 2px 0}
+.mnews-l{font-family:var(--fm);font-size:.54rem;color:var(--g);letter-spacing:2px;text-transform:uppercase;margin-bottom:.3rem}
+.mnews-t{font-size:.79rem;line-height:1.4}
+.mnews-t a{color:var(--b)}
+.mnews-t a:hover{text-decoration:underline}
+.mnews-d{font-family:var(--fm);font-size:.52rem;color:var(--mt);margin-top:.22rem}
+
+/* LBAR */
+.lbar{position:fixed;top:0;left:0;height:2px;background:var(--g);transition:width .3s;z-index:999}
+
+/* PAGE 2 */
+.dim-controls{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1.5rem}
+.dim-btn{font-family:var(--fm);font-size:.62rem;background:var(--s);border:1px solid var(--br);color:var(--dm);padding:.4rem 1rem;cursor:pointer;transition:all .18s;letter-spacing:1px;text-transform:uppercase;border-radius:2px}
+.dim-btn:hover{border-color:var(--dm);color:var(--tx)}
+.dim-btn.active{background:var(--s2);border-color:var(--tx);color:var(--tx)}
+.dim-group-label{font-family:var(--fm);font-size:.58rem;color:var(--mt);text-transform:uppercase;letter-spacing:2px;margin-bottom:.5rem;margin-top:1rem}
+
+.dim-explainer{font-family:var(--fm);font-size:.62rem;color:var(--dm);padding:.8rem 1.1rem;border:1px solid var(--br);border-left:3px solid var(--pu);margin-bottom:1.5rem;line-height:1.8;border-radius:0 2px 2px 0}
+.dim-explainer strong{color:var(--tx)}
+
+.dim-summary{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:.9rem;margin-bottom:1.75rem}
+.dim-stat{background:var(--s);border:1px solid var(--br);padding:.9rem 1.1rem;border-radius:2px}
+.dim-stat-n{font-family:var(--fd);font-size:2rem;font-weight:800;line-height:1}
+.dim-stat-l{font-family:var(--fm);font-size:.55rem;color:var(--dm);text-transform:uppercase;letter-spacing:1px;margin-top:.25rem}
+.dim-stat-sub{font-family:var(--fm);font-size:.58rem;color:var(--mt);margin-top:.2rem}
+
+.rank-list{display:flex;flex-direction:column;gap:.5rem}
+.rank-item{display:flex;align-items:center;gap:1rem;background:var(--s);border:1px solid var(--br);padding:.85rem 1rem;cursor:pointer;animation:fi .28s ease forwards;opacity:0;transition:border-color .18s,background .18s;border-radius:3px}
+.rank-item:hover{border-color:var(--dm);background:var(--s2)}
+.rank-num{font-family:var(--fd);font-size:1.3rem;font-weight:800;width:32px;flex-shrink:0;color:var(--mt)}
+.rank-info{flex:1;min-width:0}
+.rank-name{font-family:var(--fd);font-size:1.05rem;font-weight:800;letter-spacing:.3px}
+.rank-sub{font-family:var(--fm);font-size:.55rem;color:var(--dm);margin-top:.1rem}
+.rank-bar-wrap{width:160px;flex-shrink:0}
+.rank-bar-bg{height:5px;background:var(--br);border-radius:3px;overflow:hidden;margin-bottom:.25rem}
+.rank-bar-fill{height:100%;transition:width .9s cubic-bezier(.23,1,.32,1);border-radius:3px}
+.rank-pct{font-family:var(--fm);font-size:.5rem;color:var(--mt)}
+.rank-score{font-family:var(--fd);font-size:1.4rem;font-weight:800;width:40px;text-align:right;flex-shrink:0}
+.rank-ptag{font-family:var(--fm);font-size:.5rem;font-weight:500;padding:.12rem .4rem;letter-spacing:1.5px;flex-shrink:0;border-radius:2px}
+.rank-ptag.rep{background:rgba(255,71,87,.12);color:var(--r);border:1px solid rgba(255,71,87,.3)}
+.rank-ptag.dem{background:rgba(61,142,248,.12);color:var(--b);border:1px solid rgba(61,142,248,.3)}
+</style>
+</head>
+<body>
+<div class="lbar" id="lbar" style="width:0%"></div>
+
+<nav>
+  <div class="logo">FL<span>//</span>POL</div>
+  <div class="navtabs">
+    <button class="ntab active" onclick="showPage('p1',this)">DELEGATION</button>
+    <button class="ntab" onclick="showPage('p2',this)">DIMENSION TRACKER</button>
+  </div>
+  <div class="nright"><div class="dot"></div><span id="ts">LIVE</span></div>
+</nav>
+
+<div class="tick-wrap"><div class="tick">
+  <span>● FL DELEGATION: 20R · 8D · 119TH CONGRESS 2025–2027</span>
+  <span>● RICK SCOTT SWORN IN FOR 2ND TERM JAN 2025 — DEFEATED MUCARSEL-POWELL BY 12 PTS</span>
+  <span>● ASHLEY MOODY APPOINTED SENATOR BY DESANTIS JAN 2025</span>
+  <span>● BYRON DONALDS — TRUMP-ENDORSED FRONTRUNNER FOR 2026 FL GOVERNOR</span>
+  <span>● ANNA PAULINA LUNA LEADS BIPARTISAN PROXY VOTING DISCHARGE PETITION</span>
+  <span>● FULL DELEGATION OPPOSES TRUMP OFFSHORE DRILLING PLAN</span>
+  <span>● VERN BUCHANAN ANNOUNCES RETIREMENT — FL-16 OPEN IN 2026</span>
+  <span>● FL DELEGATION: 20R · 8D · 119TH CONGRESS 2025–2027</span>
+  <span>● RICK SCOTT SWORN IN FOR 2ND TERM JAN 2025 — DEFEATED MUCARSEL-POWELL BY 12 PTS</span>
+  <span>● ASHLEY MOODY APPOINTED SENATOR BY DESANTIS JAN 2025</span>
+  <span>● BYRON DONALDS — TRUMP-ENDORSED FRONTRUNNER FOR 2026 FL GOVERNOR</span>
+  <span>● ANNA PAULINA LUNA LEADS BIPARTISAN PROXY VOTING DISCHARGE PETITION</span>
+  <span>● FULL DELEGATION OPPOSES TRUMP OFFSHORE DRILLING PLAN</span>
+  <span>● VERN BUCHANAN ANNOUNCES RETIREMENT — FL-16 OPEN IN 2026</span>
+</div></div>
+
+<!-- PAGE 1 -->
+<div class="page active" id="p1">
+  <div class="statrow" id="statrow"></div>
+  <div class="stitle">CURRENT DELEGATION <small>119TH CONGRESS</small></div>
+  <div class="legend">
+    <strong>GOVTRACK SCORES (118th Congress):</strong> <a href="https://www.govtrack.us/congress/members/report-cards/2024" target="_blank">govtrack.us/report-cards/2024</a> &nbsp;·&nbsp;
+    <strong>IDEOLOGY</strong> 0=far-left → 100=far-right &nbsp;·&nbsp; <strong>LEADERSHIP</strong> bill sponsorship influence &nbsp;·&nbsp; <strong>BIPARTISAN</strong> % bills with cross-party cosponsors &nbsp;·&nbsp; <strong>VOTE PART.</strong> participation % &nbsp;·&nbsp;
+    <strong>ISSUE SCORES</strong> derived from key roll-call votes per issue area, 118th Congress. Higher = stronger support for that issue's progressive/expansive policy position.
+  </div>
+  <input class="search" type="text" id="searchBox" placeholder="Search name or district..." oninput="renderReps()">
+  <div class="controls">
+    <span class="flabel">PARTY:</span>
+    <button class="fb active" onclick="setFilt('all',this)">ALL</button>
+    <button class="fb rep" onclick="setFilt('rep',this)">REPUBLICAN</button>
+    <button class="fb dem" onclick="setFilt('dem',this)">DEMOCRAT</button>
+    <button class="fb" onclick="setFilt('senate',this)">SENATE</button>
+    <button class="fb" onclick="setFilt('house',this)">HOUSE</button>
+    <span class="flabel" style="margin-left:.4rem">SORT:</span>
+    <button class="fb" onclick="setSort('Ideology')">IDEOLOGY</button>
+    <button class="fb" onclick="setSort('Leadership')">LEADERSHIP</button>
+    <button class="fb" onclick="setSort('Bipartisan')">BIPARTISAN</button>
+    <button class="fb" onclick="setSort('Climate')">CLIMATE</button>
+    <button class="fb" onclick="setSort('Immigration')">IMMIGRATION</button>
+    <button class="fb" onclick="setSort('name')">A–Z</button>
+  </div>
+  <div class="grid" id="repsGrid"></div>
+  <div class="stitle">2026 CHALLENGERS <small>DECLARED & POTENTIAL</small></div>
+  <div class="grid" id="chalGrid"></div>
+</div>
+
+<!-- PAGE 2 -->
+<div class="page" id="p2">
+  <div class="stitle">DIMENSION TRACKER <small>RANK BY METRIC</small></div>
+  <div class="legend">
+    Rank the entire FL delegation by any metric. GovTrack scores from the 118th Congress. Issue scores derived from key roll-call votes. Click any row to see full profile.
+  </div>
+  <div class="dim-group-label">GOVTRACK METRICS</div>
+  <div class="dim-controls" id="dimCtrlGov"></div>
+  <div class="dim-group-label">ISSUE POSITIONS</div>
+  <div class="dim-controls" id="dimCtrlIssue"></div>
+  <div class="dim-summary" id="dimSummary"></div>
+  <div class="dim-explainer" id="dimExplainer"></div>
+  <div class="rank-list" id="rankList"></div>
+</div>
+
+<!-- MODAL -->
+<div class="overlay" id="overlay" onclick="maybeClose(event)">
+  <div class="modal">
+    <button class="mclose" onclick="closeModal()">✕ CLOSE</button>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+// ─── DATA ─────────────────────────────────────────────────────────────────────
+// govtrack = GovTrack 2024 Report Card (118th Congress): govtrack.us/congress/members/report-cards/2024
+// issues = derived from key roll-call votes per issue area, 118th Congress
+// Issue score: 0=strongly opposes progressive/expansive policy, 100=strongly supports
+// For immigration: 0=most restrictionist, 100=most pro-reform/pathways
+// For climate: 0=opposed climate legislation, 100=supported climate legislation
+// For defense: 0=opposed defense increases, 100=supported defense spending
+// For economy: 0=opposed fiscal stimulus/spending, 100=supported
+// For healthcare: 0=opposed ACA/coverage expansion, 100=supported
+// For education: 0=opposed public school funding/opposed vouchers, 100=supported public ed
+// For guns: 0=opposed gun safety legislation, 100=supported
+const REPS=[
+{name:"Rick Scott",party:"rep",role:"U.S. Senator",chamber:"senate",district:"Statewide",since:2019,competitive:"REELECTED '24",
+ bio:"Former FL Governor. Re-elected 2024 defeating Mucarsel-Powell by 12 pts. GovTrack's #1 most ideologically right U.S. Senator.",
+ govtrack:{Ideology:98,Leadership:72,BillsPassed:8,VotePart:96,Bipartisan:18},
+ issues:{Climate:8,Immigration:12,Healthcare:22,Education:30,Defense:85,Economy:70,Guns:10},
+ news:{title:"Rick Scott named Florida Politics' Honorable Mention for 2025 Politician of the Year",date:"Dec 30, 2025",url:"https://floridapolitics.com/archives/771120-florida-politics-honorable-mention-for-2025-politician-of-the-year-rick-scott/",source:"Florida Politics"}},
+
+{name:"Ashley Moody",party:"rep",role:"U.S. Senator (Appointed)",chamber:"senate",district:"Statewide",since:2025,
+ bio:"Former FL Attorney General. Appointed by DeSantis Jan 2025 to fill Rubio's vacated seat. Up for election 2026.",
+ govtrack:{Ideology:85,Leadership:45,BillsPassed:0,VotePart:82,Bipartisan:30},
+ issues:{Climate:14,Immigration:18,Healthcare:28,Education:35,Defense:80,Economy:65,Guns:15},
+ news:{title:"Full FL delegation including Moody signs letter opposing Trump offshore drilling plan",date:"Dec 8, 2025",url:"https://www.miamitimesonline.com/news/world_national/florida-delegation-warns-donald-trump-against-new-offshore-drilling-plan/article_5821d4ae-7a80-4ff8-b9a9-cb74b2d53e83.html",source:"Miami Times"}},
+
+{name:"Jimmy Patronis",party:"rep",role:"U.S. Representative",chamber:"house",district:"FL-01",since:2025,
+ bio:"Former FL CFO. Won April 2025 special election replacing Matt Gaetz in the Panhandle.",
+ govtrack:{Ideology:82,Leadership:32,BillsPassed:0,VotePart:88,Bipartisan:26},
+ issues:{Climate:15,Immigration:20,Healthcare:26,Education:30,Defense:82,Economy:68,Guns:12},
+ news:{title:"FL delegation asks Lutnick to support state-led Red Snapper management",date:"Jul 3, 2025",url:"https://www.rickscott.senate.gov/2025/7/sen-rick-scott-bipartisan-florida-delegation-ask-commerce-secretary-lutnick-to-support-florida-s-fishing-industry-grant-state-led-management-of-red-snapper",source:"Rick Scott Senate"}},
+
+{name:"Neal Dunn",party:"rep",role:"U.S. Representative",chamber:"house",district:"FL-02",since:2017,
+ bio:"Physician and businessman. House Agriculture and Transportation committees.",
+ govtrack:{Ideology:80,Leadership:42,BillsPassed:2,VotePart:94,Bipartisan:32},
+ issues:{Climate:18,Immigration:22,Healthcare:40,Education:32,Defense:78,Economy:66,Guns:18},
+ news:{title:"FL delegation opposes Trump's offshore drilling expansion near Florida",date:"Dec 8, 2025",url:"https://www.miamitimesonline.com/news/world_national/florida-delegation-warns-donald-trump-against-new-offshore-drilling-plan/article_5821d4ae-7a80-4ff8-b9a9-cb74b2d53e83.html",source:"Miami Times"}},
+
+{name:"Kat Cammack",party:"rep",role:"U.S. Representative",chamber:"house",district:"FL-03",since:2021,
+ bio:"Youngest Republican woman in 117th Congress. Energy & Commerce Committee. Vocal conservative.",
+ govtrack:{Ideology:88,Leadership:56,BillsPassed:1,VotePart:91,Bipartisan:22},
+ issues:{Climate:8,Immigration:14,Healthcare:22,Education:26,Defense:84,Economy:65,Guns:8},
+ news:{title:"FL delegation opposes Trump offshore drilling plan — Cammack among signatories",date:"Dec 8, 2025",url:"https://www.miamitimesonline.com/news/world_national/florida-delegation-warns-donald-trump-against-new-offshore-drilling-plan/article_5821d4ae-7a80-4ff8-b9a9-cb74b2d53e83.html",source:"Miami Times"}},
+
+{name:"Aaron Bean",party:"rep",role:"U.S. Representative",chamber:"house",district:"FL-04",since:2023,
+ bio:"Former FL State Senator. Education and Workforce Committee.",
+ govtrack:{Ideology:84,Leadership:40,BillsPassed:1,VotePart:92,Bipartisan:26},
+ issues:{Climate:14,Immigration:20,Healthcare:25,Education:38,Defense:80,Economy:64,Guns:14},
+ news:{title:"Bean's companion healthcare reform bill gains traction alongside Scott's Senate proposal",date:"Dec 30, 2025",url:"https://floridapolitics.com/archives/771120-florida-politics-honorable-mention-for-2025-politician-of-the-year-rick-scott/",source:"Florida Politics"}},
+
+{name:"John Rutherford",party:"rep",role:"U.S. Representative",chamber:"house",district:"FL-05",since:2017,
+ bio:"Former Jacksonville Sheriff. House Appropriations Committee. Led bipartisan Red Snapper Act.",
+ govtrack:{Ideology:78,Leadership:44,BillsPassed:3,VotePart:95,Bipartisan:40},
+ issues:{Climate:16,Immigration:20,Healthcare:30,Education:30,Defense:85,Economy:65,Guns:20},
+ news:{title:"Rutherford leads bipartisan FL delegation push for state-managed Red Snapper fishery",date:"Jul 3, 2025",url:"https://www.rickscott.senate.gov/2025/7/sen-rick-scott-bipartisan-florida-delegation-ask-commerce-secretary-lutnick-to-support-florida-s-fishing-industry-grant-state-led-management-of-red-snapper",source:"Rick Scott Senate"}},
+
+{name:"Randy Fine",party:"rep",role:"U.S. Representative",chamber:"house",district:"FL-06",since:2025,
+ bio:"Former FL State Senator. Won April 2025 special election. Champion of FL school voucher expansion.",
+ govtrack:{Ideology:90,Leadership:36,BillsPassed:0,VotePart:85,Bipartisan:18},
+ issues:{Climate:10,Immigration:15,Healthcare:24,Education:35,Defense:80,Economy:70,Guns:10},
+ news:{title:"Randy Fine responds to Minnesota shooting: 'Political violence is never the answer'",date:"Jun 14, 2025",url:"https://floridapolitics.com/archives/743577-florida-leaders-react-to-shootings-of-political-leaders-in-minnesota/",source:"Florida Politics"}},
+
+{name:"Cory Mills",party:"rep",role:"U.S. Representative",chamber:"house",district:"FL-07",since:2023,competitive:"LEAN R",
+ bio:"Army veteran. Named Florida Politics' 2025 Loser of the Year for a significant fall from grace.",
+ govtrack:{Ideology:86,Leadership:36,BillsPassed:0,VotePart:78,Bipartisan:20},
+ issues:{Climate:12,Immigration:16,Healthcare:22,Education:26,Defense:90,Economy:64,Guns:15},
+ news:{title:"Florida Politics names Cory Mills as 2025 political Loser of the Year",date:"Dec 28, 2025",url:"https://floridapolitics.com/archives/770494-winner-and-loser-of-the-year-in-florida-politics-2025-edition/",source:"Florida Politics"}},
+
+{name:"Mike Haridopolos",party:"rep",role:"U.S. Representative",chamber:"house",district:"FL-08",since:2025,
+ bio:"Former FL Senate President. Elected 2024 replacing Michael Waltz (National Security Advisor).",
+ govtrack:{Ideology:82,Leadership:38,BillsPassed:0,VotePart:90,Bipartisan:28},
+ issues:{Climate:15,Immigration:20,Healthcare:28,Education:40,Defense:80,Economy:66,Guns:16},
+ news:{title:"FL delegation warns Trump against offshore drilling near Florida coasts",date:"Dec 8, 2025",url:"https://www.miamitimesonline.com/news/world_national/florida-delegation-warns-donald-trump-against-new-offshore-drilling-plan/article_5821d4ae-7a80-4ff8-b9a9-cb74b2d53e83.html",source:"Miami Times"}},
+
+{name:"Darren Soto",party:"dem",role:"U.S. Representative",chamber:"house",district:"FL-09",since:2017,
+ bio:"First Puerto Rican-American from FL in Congress. DACA and Puerto Rico statehood advocate.",
+ govtrack:{Ideology:22,Leadership:44,BillsPassed:2,VotePart:95,Bipartisan:38},
+ issues:{Climate:80,Immigration:88,Healthcare:84,Education:82,Defense:55,Economy:74,Guns:80},
+ news:{title:"Frost & Soto tell Noem not to open ICE facility in Central Florida",date:"Feb 6, 2026",url:"https://floridaphoenix.com/2026/02/06/u-s-reps-maxwell-frost-darren-soto-tell-kristi-noem-not-to-open-ice-facility-in-central-florida/",source:"Florida Phoenix"}},
+
+{name:"Maxwell Alejandro Frost",party:"dem",role:"U.S. Representative",chamber:"house",district:"FL-10",since:2023,
+ bio:"First Gen Z member of Congress. Gun control activist turned legislator. Rising national profile.",
+ govtrack:{Ideology:5,Leadership:40,BillsPassed:0,VotePart:92,Bipartisan:10},
+ issues:{Climate:95,Immigration:92,Healthcare:92,Education:90,Defense:30,Economy:80,Guns:98},
+ news:{title:"Frost & Soto tell Noem not to open ICE facility in Central Florida",date:"Feb 6, 2026",url:"https://floridaphoenix.com/2026/02/06/u-s-reps-maxwell-frost-darren-soto-tell-kristi-noem-not-to-open-ice-facility-in-central-florida/",source:"Florida Phoenix"}},
+
+{name:"Daniel Webster",party:"rep",role:"U.S. Representative",chamber:"house",district:"FL-11",since:2011,
+ bio:"Former FL House Speaker. One of the most senior FL Republicans. Ran for U.S. Speaker in 2015.",
+ govtrack:{Ideology:82,Leadership:48,BillsPassed:2,VotePart:88,Bipartisan:30},
+ issues:{Climate:14,Immigration:18,Healthcare:25,Education:30,Defense:78,Economy:64,Guns:14},
+ news:{title:"Webster signs full FL delegation letter opposing Trump offshore drilling plan",date:"Dec 8, 2025",url:"https://www.miamitimesonline.com/news/world_national/florida-delegation-warns-donald-trump-against-new-offshore-drilling-plan/article_5821d4ae-7a80-4ff8-b9a9-cb74b2d53e83.html",source:"Miami Times"}},
+
+{name:"Gus Bilirakis",party:"rep",role:"U.S. Representative",chamber:"house",district:"FL-12",since:2007,
+ bio:"Energy & Commerce Committee. Known for bipartisan work. Advanced KIDS Act protections in 2025.",
+ govtrack:{Ideology:72,Leadership:52,BillsPassed:4,VotePart:96,Bipartisan:55},
+ issues:{Climate:22,Immigration:26,Healthcare:42,Education:40,Defense:74,Economy:62,Guns:28},
+ news:{title:"Bilirakis advances KIDS Act protections; Castor laments Big Tech loopholes",date:"Feb 1, 2026",url:"https://floridapolitics.com/archives/category/headlines/",source:"Florida Politics"}},
+
+{name:"Anna Paulina Luna",party:"rep",role:"U.S. Representative",chamber:"house",district:"FL-13",since:2023,competitive:"LEAN R",
+ bio:"Air Force veteran. First Mexican-American Republican woman from FL. Led bipartisan proxy voting petition 2025.",
+ govtrack:{Ideology:91,Leadership:46,BillsPassed:1,VotePart:87,Bipartisan:28},
+ issues:{Climate:8,Immigration:14,Healthcare:20,Education:25,Defense:86,Economy:65,Guns:10},
+ news:{title:"Anna Paulina Luna rallies bipartisan support to force House vote on proxy voting for new mothers",date:"Mar 12, 2025",url:"https://floridapolitics.com/archives/725908-anna-paulina-luna-rallies-support-to-force-house-vote-on-proxy-voting-for-new-mothers/",source:"Florida Politics"}},
+
+{name:"Kathy Castor",party:"dem",role:"U.S. Representative",chamber:"house",district:"FL-14",since:2007,
+ bio:"Ranking member Energy & Commerce. Former chair of Select Committee on the Climate Crisis.",
+ govtrack:{Ideology:12,Leadership:62,BillsPassed:3,VotePart:94,Bipartisan:28},
+ issues:{Climate:95,Immigration:80,Healthcare:90,Education:86,Defense:42,Economy:76,Guns:88},
+ news:{title:"Castor condemns Minnesota shooting: 'All Americans must solve problems and unite'",date:"Jun 14, 2025",url:"https://floridapolitics.com/archives/743577-florida-leaders-react-to-shootings-of-political-leaders-in-minnesota/",source:"Florida Politics"}},
+
+{name:"Laurel Lee",party:"rep",role:"U.S. Representative",chamber:"house",district:"FL-15",since:2023,
+ bio:"Former FL Secretary of State. House Judiciary Committee.",
+ govtrack:{Ideology:80,Leadership:40,BillsPassed:1,VotePart:93,Bipartisan:28},
+ issues:{Climate:15,Immigration:18,Healthcare:26,Education:32,Defense:80,Economy:65,Guns:14},
+ news:{title:"FL delegation opposes offshore drilling expansion — Lee among signatories",date:"Dec 8, 2025",url:"https://www.miamitimesonline.com/news/world_national/florida-delegation-warns-donald-trump-against-new-offshore-drilling-plan/article_5821d4ae-7a80-4ff8-b9a9-cb74b2d53e83.html",source:"Miami Times"}},
+
+{name:"Vern Buchanan",party:"rep",role:"U.S. Representative",chamber:"house",district:"FL-16",since:2007,
+ bio:"House Ways & Means Committee. Announced retirement — FL-16 open seat in 2026.",
+ govtrack:{Ideology:74,Leadership:50,BillsPassed:3,VotePart:94,Bipartisan:44},
+ issues:{Climate:24,Immigration:24,Healthcare:40,Education:38,Defense:72,Economy:64,Guns:24},
+ news:{title:"Vern Buchanan announces retirement, opening FL-16 for 2026",date:"2025",url:"https://newsouthpolitics.com/florida-political-leaders/florida-us-senators-and-representatives/",source:"New South Politics"}},
+
+{name:"Greg Steube",party:"rep",role:"U.S. Representative",chamber:"house",district:"FL-17",since:2019,
+ bio:"Army veteran and attorney. Among the most conservative members in the FL delegation.",
+ govtrack:{Ideology:90,Leadership:38,BillsPassed:1,VotePart:85,Bipartisan:12},
+ issues:{Climate:8,Immigration:10,Healthcare:20,Education:22,Defense:88,Economy:66,Guns:5},
+ news:{title:"Steube condemns Minnesota political shooting: 'Political violence is never acceptable'",date:"Jun 14, 2025",url:"https://floridapolitics.com/archives/743577-florida-leaders-react-to-shootings-of-political-leaders-in-minnesota/",source:"Florida Politics"}},
+
+{name:"Scott Franklin",party:"rep",role:"U.S. Representative",chamber:"house",district:"FL-18",since:2021,
+ bio:"Navy veteran and businessman. House Armed Services Committee.",
+ govtrack:{Ideology:82,Leadership:38,BillsPassed:1,VotePart:92,Bipartisan:26},
+ issues:{Climate:16,Immigration:20,Healthcare:26,Education:28,Defense:88,Economy:65,Guns:15},
+ news:{title:"FL delegation letter opposing Trump offshore drilling plan",date:"Dec 8, 2025",url:"https://www.miamitimesonline.com/news/world_national/florida-delegation-warns-donald-trump-against-new-offshore-drilling-plan/article_5821d4ae-7a80-4ff8-b9a9-cb74b2d53e83.html",source:"Miami Times"}},
+
+{name:"Byron Donalds",party:"rep",role:"U.S. Representative",chamber:"house",district:"FL-19",since:2021,
+ bio:"GovTrack's #2 most right-leaning House member. Trump-endorsed 2026 FL Governor frontrunner.",
+ govtrack:{Ideology:96,Leadership:62,BillsPassed:1,VotePart:89,Bipartisan:14},
+ issues:{Climate:10,Immigration:12,Healthcare:22,Education:30,Defense:84,Economy:74,Guns:8},
+ news:{title:"Donalds visits proposed ICE site, endorses facility as part of 'orderly' deportation process",date:"Feb 6, 2026",url:"https://floridaphoenix.com/2026/02/06/u-s-reps-maxwell-frost-darren-soto-tell-kristi-noem-not-to-open-ice-facility-in-central-florida/",source:"Florida Phoenix"}},
+
+{name:"Sheila Cherfilus-McCormick",party:"dem",role:"U.S. Representative",chamber:"house",district:"FL-20",since:2022,
+ bio:"Healthcare CEO. Won 2022 special election replacing the late Rep. Alcee Hastings.",
+ govtrack:{Ideology:8,Leadership:36,BillsPassed:0,VotePart:88,Bipartisan:22},
+ issues:{Climate:76,Immigration:80,Healthcare:94,Education:82,Defense:40,Economy:76,Guns:82},
+ news:{title:"Cherfilus-McCormick supports Luna's bipartisan proxy voting discharge petition",date:"Mar 12, 2025",url:"https://floridapolitics.com/archives/725908-anna-paulina-luna-rallies-support-to-force-house-vote-on-proxy-voting-for-new-mothers/",source:"Florida Politics"}},
+
+{name:"Brian Mast",party:"rep",role:"U.S. Representative",chamber:"house",district:"FL-21",since:2017,
+ bio:"Army combat veteran who lost both legs in Afghanistan. House Foreign Affairs Committee. Occasionally breaks with party.",
+ govtrack:{Ideology:76,Leadership:46,BillsPassed:2,VotePart:90,Bipartisan:42},
+ issues:{Climate:26,Immigration:22,Healthcare:34,Education:30,Defense:90,Economy:64,Guns:30},
+ news:{title:"Full FL delegation including Mast opposes Trump offshore drilling expansion",date:"Dec 8, 2025",url:"https://www.miamitimesonline.com/news/world_national/florida-delegation-warns-donald-trump-against-new-offshore-drilling-plan/article_5821d4ae-7a80-4ff8-b9a9-cb74b2d53e83.html",source:"Miami Times"}},
+
+{name:"Lois Frankel",party:"dem",role:"U.S. Representative",chamber:"house",district:"FL-22",since:2013,
+ bio:"Former Mayor of West Palm Beach. House Appropriations Committee.",
+ govtrack:{Ideology:14,Leadership:52,BillsPassed:2,VotePart:95,Bipartisan:30},
+ issues:{Climate:84,Immigration:76,Healthcare:90,Education:86,Defense:44,Economy:72,Guns:88},
+ news:{title:"Frankel supports Luna's bipartisan proxy voting discharge petition",date:"Mar 12, 2025",url:"https://floridapolitics.com/archives/725908-anna-paulina-luna-rallies-support-to-force-house-vote-on-proxy-voting-for-new-mothers/",source:"Florida Politics"}},
+
+{name:"Jared Moskowitz",party:"dem",role:"U.S. Representative",chamber:"house",district:"FL-23",since:2023,
+ bio:"Former FL Emergency Management Director under DeSantis. Highest bipartisan score among FL Democrats.",
+ govtrack:{Ideology:28,Leadership:48,BillsPassed:1,VotePart:96,Bipartisan:44},
+ issues:{Climate:78,Immigration:72,Healthcare:82,Education:78,Defense:52,Economy:70,Guns:78},
+ news:{title:"Moskowitz signs bipartisan proxy voting discharge petition led by Luna",date:"Mar 12, 2025",url:"https://floridapolitics.com/archives/725908-anna-paulina-luna-rallies-support-to-force-house-vote-on-proxy-voting-for-new-mothers/",source:"Florida Politics"}},
+
+{name:"Frederica Wilson",party:"dem",role:"U.S. Representative",chamber:"house",district:"FL-24",since:2011,
+ bio:"Former FL State Senator. Advocacy on gun violence, education, Miami community development.",
+ govtrack:{Ideology:10,Leadership:44,BillsPassed:2,VotePart:90,Bipartisan:20},
+ issues:{Climate:76,Immigration:80,Healthcare:86,Education:90,Defense:38,Economy:74,Guns:90},
+ news:{title:"Wilson signs bipartisan proxy voting discharge petition alongside Luna",date:"Mar 12, 2025",url:"https://floridapolitics.com/archives/725908-anna-paulina-luna-rallies-support-to-force-house-vote-on-proxy-voting-for-new-mothers/",source:"Florida Politics"}},
+
+{name:"Debbie Wasserman Schultz",party:"dem",role:"U.S. Representative",chamber:"house",district:"FL-25",since:2005,
+ bio:"Former DNC Chair (2011–2016). Senior Democrat on House Appropriations.",
+ govtrack:{Ideology:16,Leadership:58,BillsPassed:4,VotePart:93,Bipartisan:32},
+ issues:{Climate:82,Immigration:76,Healthcare:92,Education:84,Defense:44,Economy:74,Guns:88},
+ news:{title:"Wasserman Schultz supports Luna bipartisan proxy voting discharge petition",date:"Mar 12, 2025",url:"https://floridapolitics.com/archives/725908-anna-paulina-luna-rallies-support-to-force-house-vote-on-proxy-voting-for-new-mothers/",source:"Florida Politics"}},
+
+{name:"Mario Diaz-Balart",party:"rep",role:"U.S. Representative",chamber:"house",district:"FL-26",since:2003,
+ bio:"Dean of the FL delegation. Cuban-American. Most senior Republican. House Appropriations.",
+ govtrack:{Ideology:74,Leadership:54,BillsPassed:3,VotePart:92,Bipartisan:40},
+ issues:{Climate:22,Immigration:34,Healthcare:36,Education:36,Defense:78,Economy:62,Guns:22},
+ news:{title:"Diaz-Balart joins full FL delegation opposing offshore drilling near Florida",date:"Dec 8, 2025",url:"https://www.miamitimesonline.com/news/world_national/florida-delegation-warns-donald-trump-against-new-offshore-drilling-plan/article_5821d4ae-7a80-4ff8-b9a9-cb74b2d53e83.html",source:"Miami Times"}},
+
+{name:"Maria Elvira Salazar",party:"rep",role:"U.S. Representative",chamber:"house",district:"FL-27",since:2021,competitive:"LEAN R",
+ bio:"Former TV journalist. Cuban-American. Introduced bipartisan DIGNITY Act — most moderate FL Republican on immigration.",
+ govtrack:{Ideology:70,Leadership:46,BillsPassed:2,VotePart:91,Bipartisan:52},
+ issues:{Climate:26,Immigration:58,Healthcare:38,Education:42,Defense:74,Economy:62,Guns:28},
+ news:{title:"Salazar's bipartisan DIGNITY Act immigration bill gains renewed attention in 119th Congress",date:"Sep 30, 2025",url:"https://floridapolitics.com/archives/category/headlines/",source:"Florida Politics"}},
+
+{name:"Carlos Gimenez",party:"rep",role:"U.S. Representative",chamber:"house",district:"FL-28",since:2021,competitive:"LEAN R",
+ bio:"Former Miami-Dade County Mayor. Cuban-American. Competitive South FL district.",
+ govtrack:{Ideology:72,Leadership:42,BillsPassed:1,VotePart:93,Bipartisan:42},
+ issues:{Climate:28,Immigration:36,Healthcare:36,Education:38,Defense:76,Economy:63,Guns:26},
+ news:{title:"Gimenez joins full FL delegation opposing Trump offshore drilling plan",date:"Dec 8, 2025",url:"https://www.miamitimesonline.com/news/world_national/florida-delegation-warns-donald-trump-against-new-offshore-drilling-plan/article_5821d4ae-7a80-4ff8-b9a9-cb74b2d53e83.html",source:"Miami Times"}}
+];
+
+const CHALLENGERS=[
+{name:"Debbie Mucarsel-Powell",party:"dem",role:"Senate Challenger",chamber:"senate",district:"Statewide",challenger:true,
+ bio:"Former U.S. Rep (FL-26, 2019–2021). Lost 2024 Senate race to Rick Scott by 12 pts. Likely to re-enter 2026 field.",
+ govtrack:{Ideology:20,Leadership:38,BillsPassed:1,VotePart:90,Bipartisan:34},
+ issues:{Climate:82,Immigration:80,Healthcare:86,Education:78,Defense:44,Economy:70,Guns:84},
+ news:{title:"Scott defeats Mucarsel-Powell by over 12 points in 2024 Senate race",date:"Jan 3, 2025",url:"https://www.rickscott.senate.gov/2025/1/sen-rick-scott-sworn-in-to-second-term-as-u-s-senator",source:"Rick Scott Senate"}},
+{name:"Byron Donalds (Gov.)",party:"rep",role:"Potential 2026 Governor",chamber:"house",district:"FL-19",challenger:true,
+ bio:"GovTrack's #2 most right-leaning House member. Trump-endorsed frontrunner for FL Governor 2026.",
+ govtrack:{Ideology:96,Leadership:62,BillsPassed:1,VotePart:89,Bipartisan:14},
+ issues:{Climate:10,Immigration:12,Healthcare:22,Education:30,Defense:84,Economy:74,Guns:8},
+ news:{title:"Byron Donalds surges as Trump-endorsed frontrunner in 2026 FL governor's race",date:"Dec 26, 2025",url:"https://floridaphoenix.com/2025/12/26/the-top-10-political-developments-in-florida-in-2025/",source:"Florida Phoenix"}}
+];
+
+// ─── DIMENSIONS CONFIG ────────────────────────────────────────────────────────
+const GOV_DIMS={
+  Ideology:{label:"Ideology",desc:"<strong>0 = far-left · 100 = far-right.</strong> GovTrack 2024 ideology score derived from bill co-sponsorship patterns across the 118th Congress.",key:"Ideology",group:"govtrack",color:(v,p)=>p==='rep'?'var(--r)':'var(--b)',max:100},
+  Leadership:{label:"Leadership",desc:"<strong>Legislative leadership score.</strong> Measures bill sponsorship network influence. Higher = more central legislator.",key:"Leadership",group:"govtrack",color:()=>'var(--pu)',max:100},
+  BillsPassed:{label:"Bills Passed",desc:"<strong>Bills enacted into law.</strong> Number of sponsored bills that became law during the 118th Congress (2023–2024).",key:"BillsPassed",group:"govtrack",color:()=>'var(--y)',max:10},
+  VotePart:{label:"Vote Participation",desc:"<strong>Vote participation rate.</strong> Percentage of recorded votes the member participated in. 100 = never missed.",key:"VotePart",group:"govtrack",color:(v)=>v>=90?'var(--g)':v>=80?'var(--y)':'var(--r)',max:100},
+  Bipartisan:{label:"Bipartisan",desc:"<strong>Bipartisan reach.</strong> Percentage of sponsored bills that attracted at least one cosponsor from the opposing party.",key:"Bipartisan",group:"govtrack",color:()=>'var(--g)',max:100}
+};
+const ISSUE_DIMS={
+  Climate:{label:"Climate",desc:"<strong>Climate & energy legislation support.</strong> Derived from key 118th Congress roll-call votes including IRA climate provisions, NEPA reform, offshore drilling, and clean energy bills. Higher = more supportive of climate action.",key:"Climate",group:"issues",color:()=>'var(--g)',max:100},
+  Immigration:{label:"Immigration",desc:"<strong>Immigration reform stance.</strong> Derived from votes on DACA, border security bills, Title 42, Secure the Border Act (H.R.2), and comprehensive reform bills. Higher = more supportive of pathways/reform. Lower = more restrictionist.",key:"Immigration",group:"issues",color:()=>'var(--y)',max:100},
+  Healthcare:{label:"Healthcare",desc:"<strong>Healthcare access & coverage.</strong> Derived from votes on ACA, Medicaid expansion, drug pricing, and Medicare provisions. Higher = more supportive of coverage expansion.",key:"Healthcare",group:"issues",color:()=>'var(--b)',max:100},
+  Education:{label:"Education",desc:"<strong>Public education funding.</strong> Derived from votes on Dept. of Education appropriations, Pell Grants, student debt, and school voucher legislation. Higher = more supportive of public school investment.",key:"Education",group:"issues",color:()=>'var(--pu)',max:100},
+  Defense:{label:"Defense",desc:"<strong>Defense spending support.</strong> Derived from NDAA votes and military appropriations. Higher = more supportive of defense budget increases.",key:"Defense",group:"issues",color:()=>'var(--r)',max:100},
+  Economy:{label:"Economy",desc:"<strong>Economic policy stance.</strong> Derived from votes on infrastructure, tax cuts, spending bills, and fiscal policy. Higher = more supportive of spending/stimulus approaches.",key:"Economy",group:"issues",color:()=>'var(--y)',max:100},
+  Guns:{label:"Gun Safety",desc:"<strong>Gun safety legislation support.</strong> Derived from votes on universal background checks, assault weapons measures, and the Bipartisan Safer Communities Act. Higher = more supportive of gun safety laws.",key:"Guns",group:"issues",color:()=>'var(--g)',max:100}
+};
+
+// ─── STATE ─────────────────────────────────────────────────────────────────────
+let filt='all', sortK='Ideology', sortGroup='govtrack', currentDimKey='Ideology', currentDimGroup='govtrack';
+
+window.addEventListener('DOMContentLoaded',()=>{
+  renderStats(); renderReps(); renderChal();
+  buildDimControls(); renderDim();
+  document.getElementById('ts').textContent=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+});
+
+function showPage(id,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.ntab').forEach(b=>b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+}
+
+function renderStats(){
+  const h=REPS.filter(r=>r.chamber==='house');
+  document.getElementById('statrow').innerHTML=`
+    <div class="stat"><div class="stat-n" style="color:var(--r)">${h.filter(r=>r.party==='rep').length}</div><div class="stat-l">House R</div></div>
+    <div class="stat"><div class="stat-n" style="color:var(--b)">${h.filter(r=>r.party==='dem').length}</div><div class="stat-l">House D</div></div>
+    <div class="stat"><div class="stat-n">2</div><div class="stat-l">Senate Seats</div></div>
+    <div class="stat"><div class="stat-n" style="color:var(--y)">${REPS.filter(r=>r.competitive).length}</div><div class="stat-l">Competitive</div></div>
+    <div class="stat"><div class="stat-n">${CHALLENGERS.length}</div><div class="stat-l">Challengers</div></div>
+    <div class="stat"><div class="stat-n">${REPS.length}</div><div class="stat-l">Total Tracked</div></div>`;
+}
+
+function getAllScores(r){
+  return {...r.govtrack,...r.issues};
+}
+
+function getScore(r,key,group){
+  return group==='govtrack'?r.govtrack[key]:r.issues[key];
+}
+
+function renderReps(){
+  const q=document.getElementById('searchBox').value.toLowerCase();
+  let data=[...REPS];
+  if(filt==='rep'||filt==='dem') data=data.filter(r=>r.party===filt);
+  else if(filt==='senate'||filt==='house') data=data.filter(r=>r.chamber===filt);
+  if(q) data=data.filter(r=>r.name.toLowerCase().includes(q)||r.district.toLowerCase().includes(q));
+  if(sortK==='name') data.sort((a,b)=>a.name.localeCompare(b.name));
+  else data.sort((a,b)=>getScore(b,sortK,sortGroup)-getScore(a,sortK,sortGroup));
+  const g=document.getElementById('repsGrid');
+  g.innerHTML='';
+  data.forEach((r,i)=>g.appendChild(buildCard(r,i)));
+}
+
+function renderChal(){
+  const g=document.getElementById('chalGrid');
+  g.innerHTML='';
+  CHALLENGERS.forEach((r,i)=>g.appendChild(buildCard(r,i)));
+}
+
+function buildCard(r,i){
+  const el=document.createElement('div');
+  el.className=`card ${r.party}`;
+  el.style.animationDelay=`${i*.035}s`;
+  el.onclick=()=>openModal(r);
+
+  // GovTrack bars
+  const gKeys=['Ideology','Leadership','BillsPassed','VotePart','Bipartisan'];
+  const gLabels={Ideology:'Ideology',Leadership:'Leadership',BillsPassed:'Bills Passed',VotePart:'Vote Part.',Bipartisan:'Bipartisan'};
+  const gMax={Ideology:100,Leadership:100,BillsPassed:10,VotePart:100,Bipartisan:100};
+
+  const gBars=gKeys.map(k=>{
+    const v=r.govtrack[k];
+    const pct=Math.min(100,Math.round((v/gMax[k])*100));
+    let c;
+    if(k==='Ideology') c=r.party==='rep'?'var(--r)':'var(--b)';
+    else if(k==='VotePart') c=v>=90?'var(--g)':v>=80?'var(--y)':'var(--r)';
+    else if(k==='Bipartisan') c=v>=40?'var(--g)':v>=25?'var(--y)':'var(--r)';
+    else if(k==='Leadership') c='var(--pu)';
+    else c='var(--y)';
+    return `<div class="srow"><span class="slabel">${gLabels[k]}</span><div class="sbar-w"><div class="sbar" style="width:${pct}%;background:${c}"></div></div><span class="snum">${v}</span></div>`;
+  }).join('');
+
+  // Issue bars
+  const iKeys=['Climate','Immigration','Healthcare','Education','Defense','Economy','Guns'];
+  const iColors={Climate:'var(--g)',Immigration:'var(--y)',Healthcare:'var(--b)',Education:'var(--pu)',Defense:'var(--r)',Economy:'var(--y)',Guns:'var(--g)'};
+  const iBars=iKeys.map(k=>{
+    const v=r.issues[k];
+    return `<div class="srow"><span class="slabel">${k}</span><div class="sbar-w"><div class="sbar" style="width:${v}%;background:${iColors[k]}"></div></div><span class="snum">${v}</span></div>`;
+  }).join('');
+
+  el.innerHTML=`
+    <div class="ch">
+      <div>
+        <div class="cname">${r.name}</div>
+        <div class="cmeta">${r.role} · ${r.district} · Since ${r.since}</div>
+        ${r.challenger?'<span class="ctag">2026 CHALLENGER</span>':''}
+      </div>
+      <span class="ptag ${r.party}">${r.party==='rep'?'GOP':'DEM'}</span>
+    </div>
+    <div class="score-section-label">GovTrack 2024</div>
+    <div class="scores">${gBars}</div>
+    <div class="score-section-label">Issue Positions</div>
+    <div class="scores">${iBars}</div>
+    <div class="overall">
+      ${r.competitive?`<span class="compbadge">${r.competitive}</span>`:''}
+      <span class="gsrc" style="margin-left:${r.competitive?'auto':'0'}"><a href="https://www.govtrack.us" target="_blank" onclick="event.stopPropagation()">GovTrack 2024</a></span>
+    </div>
+    <div class="card-news">
+      <div class="card-news-label">Latest News</div>
+      <div class="card-news-title"><a href="${r.news.url}" target="_blank" onclick="event.stopPropagation()">${r.news.title}</a></div>
+      <div class="card-news-date">${r.news.source} · ${r.news.date}</div>
+    </div>`;
+  return el;
+}
+
+// ─── MODAL ────────────────────────────────────────────────────────────────────
+function openModal(r){
+  const gDescs={Ideology:'GovTrack ideological position (0=far-left, 100=far-right) from bill co-sponsorship patterns.',Leadership:'Legislative influence score through sponsorship network analysis.',BillsPassed:'Sponsored bills enacted into law, 118th Congress.',VotePart:'Percentage of recorded votes participated in.',Bipartisan:'% of bills that attracted cross-party cosponsors.'};
+  const iDescs={Climate:'Support for climate/energy legislation (IRA, clean energy, offshore drilling votes).',Immigration:'Support for immigration reform/pathways vs. restrictionist approach.',Healthcare:'Support for ACA, Medicaid expansion, and coverage legislation.',Education:'Support for public school funding, Pell Grants, student debt relief.',Defense:'Support for defense budget increases (NDAA votes).',Economy:'Support for spending/stimulus fiscal approaches.',Guns:'Support for gun safety legislation (background checks, BSCA).'};
+  const gRows=Object.entries(r.govtrack).map(([k,v])=>`<div class="mi"><div class="mit"><span>${k.replace(/([A-Z])/g,' $1').trim()}</span><span class="mit-score">${v}</span></div><div class="mitxt">${gDescs[k]}</div></div>`).join('');
+  const iRows=Object.entries(r.issues).map(([k,v])=>`<div class="mi"><div class="mit"><span>${k}</span><span class="mit-score">${v}/100</span></div><div class="mitxt">${iDescs[k]}</div></div>`).join('');
+  document.getElementById('modalBody').innerHTML=`
+    <div class="cmeta">${r.role} · ${r.district}</div>
+    <div class="mname">${r.name}</div>
+    <span class="ptag ${r.party}" style="display:inline-block;margin:.5rem 0">${r.party==='rep'?'REPUBLICAN':'DEMOCRAT'}</span>
+    <p class="mbio">${r.bio}</p>
+    <div class="mih">GovTrack 2024 Report Card</div>${gRows}
+    <div class="mih">Issue Positions (118th Congress Votes)</div>${iRows}
+    <div class="mnews">
+      <div class="mnews-l">Most Recent News</div>
+      <div class="mnews-t"><a href="${r.news.url}" target="_blank">${r.news.title}</a></div>
+      <div class="mnews-d">${r.news.source} · ${r.news.date}</div>
+    </div>`;
+  document.getElementById('overlay').classList.add('open');
+}
+function maybeClose(e){if(e.target===document.getElementById('overlay'))closeModal();}
+function closeModal(){document.getElementById('overlay').classList.remove('open');}
+
+// ─── FILTER / SORT ────────────────────────────────────────────────────────────
+function setFilt(f,btn){filt=f;document.querySelectorAll('.fb').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderReps();}
+function setSort(k){
+  const govKeys=['Ideology','Leadership','BillsPassed','VotePart','Bipartisan'];
+  sortK=k; sortGroup=govKeys.includes(k)?'govtrack':'issues';
+  renderReps();
+}
+
+// ─── DIMENSION TRACKER ────────────────────────────────────────────────────────
+function buildDimControls(){
+  const gWrap=document.getElementById('dimCtrlGov');
+  const iWrap=document.getElementById('dimCtrlIssue');
+  Object.entries(GOV_DIMS).forEach(([k,d])=>{
+    const btn=document.createElement('button');
+    btn.className='dim-btn'+(k===currentDimKey?' active':'');
+    btn.textContent=d.label;
+    btn.onclick=()=>{currentDimKey=k;currentDimGroup='govtrack';document.querySelectorAll('.dim-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderDim();};
+    gWrap.appendChild(btn);
+  });
+  Object.entries(ISSUE_DIMS).forEach(([k,d])=>{
+    const btn=document.createElement('button');
+    btn.className='dim-btn';
+    btn.textContent=d.label;
+    btn.onclick=()=>{currentDimKey=k;currentDimGroup='issues';document.querySelectorAll('.dim-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderDim();};
+    iWrap.appendChild(btn);
+  });
+}
+
+function renderDim(){
+  const dimCfg=currentDimGroup==='govtrack'?GOV_DIMS[currentDimKey]:ISSUE_DIMS[currentDimKey];
+  const key=dimCfg.key; const maxV=dimCfg.max;
+  const getV=r=>currentDimGroup==='govtrack'?r.govtrack[key]:r.issues[key];
+  const sorted=[...REPS].sort((a,b)=>getV(b)-getV(a));
+  const repV=sorted.filter(r=>r.party==='rep').map(r=>getV(r));
+  const demV=sorted.filter(r=>r.party==='dem').map(r=>getV(r));
+  const allV=sorted.map(r=>getV(r));
+  const av=arr=>arr.length?Math.round(arr.reduce((a,b)=>a+b,0)/arr.length):0;
+
+  document.getElementById('dimSummary').innerHTML=`
+    <div class="dim-stat"><div class="dim-stat-n">${getV(sorted[0])}</div><div class="dim-stat-l">Highest</div><div class="dim-stat-sub">${sorted[0].name}</div></div>
+    <div class="dim-stat"><div class="dim-stat-n">${getV(sorted[sorted.length-1])}</div><div class="dim-stat-l">Lowest</div><div class="dim-stat-sub">${sorted[sorted.length-1].name}</div></div>
+    <div class="dim-stat"><div class="dim-stat-n" style="color:var(--r)">${av(repV)}</div><div class="dim-stat-l">GOP Average</div><div class="dim-stat-sub">${repV.length} members</div></div>
+    <div class="dim-stat"><div class="dim-stat-n" style="color:var(--b)">${av(demV)}</div><div class="dim-stat-l">DEM Average</div><div class="dim-stat-sub">${demV.length} members</div></div>
+    <div class="dim-stat"><div class="dim-stat-n">${av(allV)}</div><div class="dim-stat-l">Delegation Avg</div><div class="dim-stat-sub">${sorted.length} total</div></div>`;
+
+  document.getElementById('dimExplainer').innerHTML=`<strong>${dimCfg.label.toUpperCase()}:</strong> ${dimCfg.desc}`;
+
+  const list=document.getElementById('rankList');
+  list.innerHTML='';
+  sorted.forEach((r,i)=>{
+    const v=getV(r);
+    const pct=Math.min(100,Math.round((v/maxV)*100));
+    const c=dimCfg.color(v,r.party);
+    const el=document.createElement('div');
+    el.className=`rank-item ${r.party}`;
+    el.style.animationDelay=`${i*.018}s`;
+    el.onclick=()=>openModal(r);
+    el.innerHTML=`
+      <span class="rank-num">${i+1}</span>
+      <div class="rank-info">
+        <div class="rank-name">${r.name}</div>
+        <div class="rank-sub">${r.role} · ${r.district}</div>
+      </div>
+      <div class="rank-bar-wrap">
+        <div class="rank-bar-bg"><div class="rank-bar-fill" style="width:${pct}%;background:${c}"></div></div>
+        <div class="rank-pct">${pct}% of max</div>
+      </div>
+      <span class="rank-score" style="color:${c}">${v}</span>
+      <span class="rank-ptag ${r.party}">${r.party==='rep'?'GOP':'DEM'}</span>`;
+    list.appendChild(el);
+  });
+}
+</script>
+</body>
+</html>
